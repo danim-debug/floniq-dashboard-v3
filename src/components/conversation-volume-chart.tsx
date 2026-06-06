@@ -1,3 +1,4 @@
+"use client";
 
 import { cn } from "@/lib/utils";
 import { type ComponentProps, useId, useMemo, useState } from "react";
