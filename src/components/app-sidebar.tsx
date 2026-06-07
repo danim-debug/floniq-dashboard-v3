@@ -19,7 +19,7 @@ export function AppSidebar() {
 	return (
 		<Sidebar collapsible="icon" variant="inset">
 			<SidebarHeader className="h-14 justify-center">
-				<SidebarMenuButton render={<a href="#link" />}><LogoIcon /><span className="font-medium">Efferd</span></SidebarMenuButton>
+				<SidebarMenuButton render={<a href="#link" />}><LogoIcon /><span className="font-medium">Floniq</span></SidebarMenuButton>
 			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>
@@ -30,17 +30,17 @@ export function AppSidebar() {
 						>
 							<PlusIcon
 							/>
-							<span>New Conversation</span>
+							<span>Nieuwe lead</span>
 						</SidebarMenuButton>
 						<Button
-							aria-label="Search conversations"
+							aria-label="Search leads"
 							className="size-8 group-data-[collapsible=icon]:opacity-0"
 							size="icon"
 							variant="outline"
 						>
 							<SearchIcon
 							/>
-							<span className="sr-only">Search conversations</span>
+							<span className="sr-only">Search leads</span>
 						</Button>
 					</SidebarMenuItem>
 				</SidebarGroup>

@@ -1,0 +1,380 @@
+# Efferd Dashboard Integration Guide
+
+## 🎯 What This Does
+
+Installs and integrates premium Efferd dashboard blocks into your shadcn/Vite project. Perfect for building SaaS dashboards with customer support metrics, lead tracking, and business analytics.
+
+## 📋 Prerequisites
+
+- Vite + React project
+- shadcn/ui installed
+- Node.js 16+
+
+## 🚀 Quick Start
+
+### Step 1: Check Project Setup
+
+Ensure your project has:
+```bash
+# Check for components.json (shadcn config)
+ls components.json
+
+# If missing, initialize shadcn:
+npx shadcn@latest init
+```
+
+### Step 2: Add Efferd Registry
+
+Add to your `components.json`:
+```json
+{
+  "registries": {
+    "@efferd": "https://efferd.com/r/{style}/{name}.json"
+  }
+}
+```
+
+### Step 3: Install Dashboard Block
+
+```bash
+# Install specific dashboard block
+npx shadcn@latest add @efferd/dashboard-3
+
+# Available blocks:
+# @efferd/dashboard-1
+# @efferd/dashboard-2
+# @efferd/dashboard-3 (customer support focus)
+# @efferd/dashboard-skeleton
+```
+
+### Step 4: Add Tooltip Provider
+
+Wrap your app with `TooltipProvider` in your main entry file:
+
+```tsx
+// src/main.tsx or src/App.jsx
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <TooltipProvider>
+      <App />
+    </TooltipProvider>
+  </StrictMode>,
+)
+```
+
+### Step 5: Use Efferd Components
+
+```tsx
+// Full app shell with sidebar
+import { AppShell } from "@/components/app-shell"
+
+// Dashboard stats component
+import { DashboardStats } from "@/components/stats"
+
+// Delta component for percentages
+import { Delta, DeltaIcon, DeltaValue } from "@/components/delta"
+
+// Example usage
+function Dashboard() {
+  return (
+    <AppShell>
+      <DashboardStats />
+    </AppShell>
+  );
+}
+```
+
+## 🧩 Available Components
+
+After installing `@efferd/dashboard-3`, you get:
+
+**Core Components:**
+- `DashboardStats` - 4 metric cards with delta indicators
+- `AppShell` - Complete layout with sidebar provider
+- `AppHeader` - Header with breadcrumbs and controls
+- `AppSidebar` - Navigation sidebar with collapsible groups
+- `DashboardSkeleton` - Loading skeleton for dashboard
+
+**Charts:**
+- `ChannelBreakdownChart` - Channel performance metrics
+- `ConversationVolumeChart` - Conversation volume trends
+- `CsatResponsesChart` - CSAT satisfaction metrics
+- `FirstReplyTimeChart` - First response time analytics
+
+**Cards:**
+- `RecentConversations` - Recent conversation list
+- `SupportActivity` - Support team activity
+- `TeamOnDuty` - Team roster and scheduling
+
+**UI Components:**
+- `Delta` - Percentage change indicators with icons
+- `CustomSidebarTrigger` - Custom sidebar toggle button
+- `NavUser` - User navigation dropdown
+- `AppBreadcrumbs` - Breadcrumb navigation
+
+## 📊 Dashboard Stats Structure
+
+The `DashboardStats` component uses this data structure:
+
+```tsx
+const stats = [
+  {
+    label: "Metric name",
+    value: "123",
+    delta: 5.2,           // percentage change
+    footnote: "vs last week",
+    lowerIsBetter: false  // true for metrics like "response time"
+  },
+  // ... more stats
+];
+```
+
+## 🔗 Custom Data Integration
+
+### For Lead Tracking Systems
+
+Replace the mock data with your Brevo/CRM data:
+
+```tsx
+// Import your data fetcher
+import { getBrevoLeads } from './utils/brevo'
+
+function App() {
+  const [leads, setLeads] = useState([])
+
+  useEffect(() => {
+    getBrevoLeads().then(setLeads)
+  }, [])
+
+  // Calculate stats from your data
+  const stats = [
+    {
+      label: "Actieve leads",
+      value: leads.filter(l => l.status === 'active').length,
+      delta: calculateGrowth(leads, 'week'),
+      footnote: "vs vorige week",
+      lowerIsBetter: false
+    },
+    // ... more stats
+  ]
+
+  return (
+    <AppShell>
+      <DashboardStats stats={stats} />
+    </AppShell>
+  )
+}
+```
+
+### For Customer Support Systems
+
+```tsx
+// Customer support metrics
+const supportStats = [
+  {
+    label: "Open tickets",
+    value: openTickets.length,
+    delta: ticketTrend,
+    footnote: "vs yesterday",
+    lowerIsBetter: true
+  },
+  {
+    label: "First response time",
+    value: "4.1m",
+    delta: -8.0,
+    footnote: "vs last week",
+    lowerIsBetter: true
+  },
+  // ... more stats
+]
+```
+
+## 🎨 Customization
+
+### Style Variants
+
+Efferd supports multiple style variants. Change in `components.json`:
+
+```json
+{
+  "style": "base-nova"  // or "new-york", " berlin", etc.
+}
+```
+
+### Icon Library
+
+Currently uses `lucide-react` icons. Available icons:
+- LayoutDashboard, Users, Building2, BriefcaseBusiness
+- MessageSquare, CalendarCheck, BarChart3, GitBranch
+- Brain, Plug, Settings, Search, Bell, HelpCircle
+- And 2000+ more lucide-react icons
+
+### Card Styling
+
+Efferd components use shadcn Card components. Customize in `src/components/ui/card.tsx`:
+
+```tsx
+<Card className="custom-card-class">
+  <CardHeader>
+    <CardTitle>Custom Title</CardTitle>
+  </CardHeader>
+  <CardContent>
+    Your content
+  </CardContent>
+</Card>
+```
+
+## 🔄 Updating Components
+
+### Update Navigation
+
+Edit `src/components/app-shared.tsx` to customize menu items:
+
+```tsx
+export const navGroups: SidebarNavGroup[] = [
+  {
+    label: "YOUR_SECTION",
+    items: [
+      {
+        title: "Your Page",
+        path: "#/your-page",
+        icon: <YourIcon />,
+        isActive: true,
+      },
+      // ... more items
+    ],
+  },
+  // ... more groups
+];
+```
+
+### Add Custom Metrics
+
+Modify the stats array in your App component:
+
+```tsx
+const customStats = [
+  {
+    label: "Your Metric",
+    value: customValue,
+    delta: customDelta,
+    footnote: "vs baseline",
+    lowerIsBetter: false
+  },
+  // ... more metrics
+];
+```
+
+## 📁 File Structure After Installation
+
+```
+src/
+├── components/
+│   ├── app-shell.tsx          # Main app layout wrapper
+│   ├── app-header.tsx         # Header component
+│   ├── app-sidebar.tsx        # Sidebar component
+│   ├── dashboard.tsx          # Dashboard grid
+│   ├── stats.tsx              # Stats component
+│   ├── delta.tsx              # Delta indicator
+│   ├── channel-breakdown-chart.tsx
+│   ├── conversation-volume-chart.tsx
+│   ├── csat-responses-chart.tsx
+│   ├── first-reply-time-chart.tsx
+│   ├── recent-conversations.tsx
+│   ├── support-activity.tsx
+│   └── team-on-duty.tsx
+│   ├── ui/
+│   │   ├── card.tsx
+│   │   ├── button.tsx
+│   │   ├── tooltip.tsx
+│   │   └── ... more UI components
+│   └── app-shared.tsx         # Navigation configuration
+```
+
+## 🎯 Use Cases
+
+**Lead Tracking Dashboard:**
+- Track lead quality scores
+- Monitor outreach performance
+- Display follow-up actions needed
+- Show conversion funnel metrics
+
+**Customer Support Dashboard:**
+- Open tickets and queue depth
+- First response time
+- CSAT scores
+- Team activity and roster
+
+**Business Analytics:**
+- Conversation volume trends
+- Channel breakdown performance
+- Support activity metrics
+- Team productivity tracking
+
+## 🔧 Troubleshooting
+
+### Issue: Components not found
+
+**Solution:** Ensure you're using the correct import path:
+```tsx
+import { DashboardStats } from "@/components/stats"
+// NOT: import { DashboardStats } from "@/components/dashboard"
+```
+
+### Issue: Delta indicators not showing
+
+**Solution:** Check your stats data structure matches the expected format with all required fields.
+
+### Issue: Sidebar not working
+
+**Solution:** Ensure you're using `AppShell` as the main wrapper:
+```tsx
+function App() {
+  return (
+    <AppShell>
+      {/* Your content */}
+    </AppShell>
+  );
+}
+```
+
+### Issue: Tooltips not working
+
+**Solution:** Make sure your app is wrapped with `TooltipProvider`:
+```tsx
+<TooltipProvider>
+  <App />
+</TooltipProvider>
+```
+
+## 📚 Available Dashboard Blocks
+
+- `@efferd/dashboard-1` - General business dashboard
+- `@efferd/dashboard-2` - Analytics focused
+- `@efferd/dashboard-3` - Customer support focused
+- `@efferd/dashboard-skeleton` - Loading skeletons
+
+Install more blocks:
+```bash
+npx shadcn@latest add @efferd/dashboard-1
+npx shadcn@latest add @efferd/dashboard-2
+npx shadcn@latest add @efferd/dashboard-skeleton
+```
+
+## 🎨 Next Steps
+
+1. **Explore Components:** Check which components were installed
+2. **Customize Navigation:** Update menu items in `app-shared.tsx`
+3. **Integrate Your Data:** Replace mock data with your real data source
+4. **Add More Blocks:** Install additional dashboard blocks as needed
+5. **Customize Styling:** Adjust card styles, colors, and layout
+
+---
+
+**💡 Pro Tip:** Start with `@efferd/dashboard-3` for customer support metrics, or `@efferd/dashboard-1` for general business dashboards. Mix and match components from different blocks!

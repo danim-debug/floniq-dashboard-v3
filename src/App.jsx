@@ -258,7 +258,7 @@ export default function App() {
 
             {/* Efferd Dashboard Stats Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-              <DashboardStats />
+              <DashboardStats stats={efferdStats} />
             </div>
 
             {/* Additional Floniq-specific sections */}

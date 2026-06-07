@@ -1,0 +1,525 @@
+---
+name: build-dashboard
+description: Build premium dashboards with charts, stats, and delta indicators from scratch. Create custom dashboard components like Efferd with Recharts and shadcn/ui.
+---
+
+# Build Premium Dashboard Skill
+
+## 🎯 Doel
+
+Leer hoe je zelf premium dashboard componenten bouwt met:
+- 📊 Grafieken en charts (Recharts)
+- 📈 Delta indicators met percentages
+- 🎨 Stats cards met trends
+- 📐 Grid layouts en responsive design
+- 🔄 Real-time data updates
+
+## 📋 Prerequisites
+
+```bash
+# Installeer dependencies
+npm install recharts lucide-react clsx tailwind-merge
+
+# Of als je shadcn/ui gebruikt:
+npm install @radix-ui/react-slot class-variance-authority
+```
+
+## 🚀 Stap 1: Delta Indicator Component
+
+Efferd-style delta indicators zijn het hart van een premium dashboard:
+
+```tsx
+// src/components/delta.tsx
+import { cn } from "@/lib/utils"
+import { TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+
+interface DeltaProps {
+  value: number              // Percentage change (5.2, -3.1, etc.)
+  variant?: "default" | "badge"
+  precision?: number         // Decimal places (default: 1)
+  suffix?: string            // Default: "%"
+  absolute?: boolean         // Show absolute value (default: true)
+}
+
+export function Delta({
+  value,
+  variant = "default",
+  precision = 1,
+  suffix = "%",
+  absolute = true
+}: DeltaProps) {
+  const displayValue = absolute ? Math.abs(value) : value
+  const formattedValue = displayValue.toFixed(precision) + suffix
+
+  const isPositive = value > 0
+  const isNegative = value < 0
+  const isNeutral = value === 0
+
+  const Icon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus
+
+  const colors = variant === "badge"
+    ? cn(
+        "gap-1 border-none tabular-nums",
+        isPositive ? "bg-emerald-500/10 text-emerald-500" : "",
+        isNegative ? "bg-red-500/10 text-red-500" : "",
+        isNeutral ? "bg-muted-foreground/10 text-muted-foreground" : ""
+      )
+    : cn(
+        "inline-flex items-center gap-1 text-xs tabular-nums",
+        isPositive ? "text-emerald-600" : "",
+        isNegative ? "text-rose-600" : "",
+        isNeutral ? "text-muted-foreground" : ""
+      )
+
+  if (variant === "badge") {
+    return (
+      <Badge className={colors}>
+        <Icon className="w-3 h-3" />
+        {formattedValue}
+      </Badge>
+    )
+  }
+
+  return (
+    <div className={colors}>
+      <Icon className="w-3 h-3" />
+      <span className="tabular-nums">{formattedValue}</span>
+    </div>
+  )
+}
+```
+
+**Gebruik:**
+```tsx
+<Delta value={5.2} />           // +5.2% (groen)
+<Delta value={-3.1} />          // -3.1% (rood)
+<Delta value={0} />             // 0% (grijs)
+<Delta value={8.5} variant="badge" />  // Badge style
+```
+
+## 📊 Stap 2: Stats Card Component
+
+Premium stats cards zoals Efferd:
+
+```tsx
+// src/components/stats-card.tsx
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Delta } from "./delta"
+
+interface StatProps {
+  label: string
+  value: string | number
+  delta?: number
+  footnote?: string
+  lowerIsBetter?: boolean  // true = rood bij positieve delta (bijv. response time)
+}
+
+export function StatCard({
+  label,
+  value,
+  delta,
+  footnote,
+  lowerIsBetter = false
+}: StatProps) {
+  // Als lowerIsBetter true is, flip de delta voor kleur coding
+  const effectiveDelta = lowerIsBetter && delta ? -delta : delta
+
+  return (
+    <Card className="shadow-none dark:ring-0">
+      <CardHeader>
+        <CardTitle className="font-normal text-muted-foreground text-xs">
+          {label}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        <p className="font-semibold text-2xl tabular-nums">
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </p>
+
+        {delta !== undefined && (
+          <div className="flex items-center gap-2 text-xs">
+            <Delta value={effectiveDelta} />
+            {footnote && (
+              <span className="text-muted-foreground">{footnote}</span>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Stats Grid Component
+interface StatsGridProps {
+  stats: StatProps[]
+}
+
+export function StatsGrid({ stats }: StatsGridProps) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {stats.map((stat, index) => (
+        <StatCard key={index} {...stat} />
+      ))}
+    </div>
+  )
+}
+```
+
+**Gebruik:**
+```tsx
+const stats = [
+  { label: "Actieve leads", value: 127, delta: 8.5, footnote: "vs vorige week" },
+  { label: "Response time", value: "4.1m", delta: -12.3, footnote: "vs vorige week", lowerIsBetter: true },
+]
+
+<StatsGrid stats={stats} />
+```
+
+## 📈 Stap 3: Charts met Recharts
+
+Efferd-style charts in 3 stappen:
+
+### 3.1 Line Chart (Trends)
+
+```tsx
+// src/components/charts/line-chart.tsx
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+interface LineChartProps {
+  data: Array<{ name: string; value: number }>
+  title: string
+  color?: string
+}
+
+export function TrendChart({ data, title, color = "#3b82f6" }: LineChartProps) {
+  return (
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base font-bold">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <XAxis
+              dataKey="name"
+              className="text-xs text-muted-foreground"
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              className="text-xs text-muted-foreground"
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={color}
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+**Gebruik:**
+```tsx
+const weeklyData = [
+  { name: 'Ma', value: 42 },
+  { name: 'Di', value: 55 },
+  { name: 'Wo', value: 38 },
+  { name: 'Do', value: 61 },
+  { name: 'Vr', value: 47 },
+]
+
+<TrendChart data={weeklyData} title="Weekly Outreach" />
+```
+
+### 3.2 Bar Chart (Categorien)
+
+```tsx
+// src/components/charts/bar-chart.tsx
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
+export function CategoryChart({ data, title }: { data: any[], title: string }) {
+  return (
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base font-bold">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <XAxis dataKey="name" className="text-xs" axisLine={false} tickLine={false} />
+            <YAxis className="text-xs" axisLine={false} tickLine={false} />
+            <Tooltip />
+            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+### 3.3 Area Chart (Cumulatief)
+
+```tsx
+// src/components/charts/area-chart.tsx
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
+export function CumulativeChart({ data, title }: { data: any[], title: string }) {
+  return (
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base font-bold">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <XAxis dataKey="name" className="text-xs" axisLine={false} tickLine={false} />
+            <YAxis className="text-xs" axisLine={false} tickLine={false} />
+            <Tooltip />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="#8b5cf6"
+              fill="#8b5cf6"
+              fillOpacity={0.2}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+## 🎨 Stap 4: Dashboard Layout
+
+Premium grid layout zoals Efferd:
+
+```tsx
+// src/components/dashboard-layout.tsx
+import { StatsGrid } from "./stats-card"
+import { TrendChart } from "./charts/line-chart"
+import { CategoryChart } from "./charts/bar-chart"
+
+export function DashboardLayout() {
+  // Stats data
+  const stats = [
+    { label: "Actieve leads", value: 127, delta: 8.5, footnote: "vs vorige week" },
+    { label: "Hot leads", value: 43, delta: 5.2, footnote: "vs vorige week" },
+    { label: "Response time", value: "4.1m", delta: -12.3, footnote: "vs vorige week", lowerIsBetter: true },
+    { label: "Conversie", value: "12.3%", delta: 2.1, footnote: "vs vorige week" },
+  ]
+
+  // Chart data
+  const weeklyData = [
+    { name: 'Ma', value: 42 },
+    { name: 'Di', value: 55 },
+    { name: 'Wo', value: 38 },
+    { name: 'Do', value: 61 },
+    { name: 'Vr', value: 47 },
+  ]
+
+  const categoryData = [
+    { name: 'Email', value: 45 },
+    { name: 'Phone', value: 23 },
+    { name: 'Social', value: 18 },
+    { name: 'Referral', value: 14 },
+  ]
+
+  return (
+    <div className="p-8 max-w-[1440px] mx-auto space-y-6">
+      {/* Stats Grid */}
+      <StatsGrid stats={stats} />
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TrendChart data={weeklyData} title="Weekly Outreach" />
+        <CategoryChart data={categoryData} title="Lead Sources" />
+      </div>
+    </div>
+  )
+}
+```
+
+## 🔄 Stap 5: Real-time Data Updates
+
+```tsx
+// src/components/live-dashboard.tsx
+import { useState, useEffect } from 'react'
+
+export function LiveDashboard() {
+  const [stats, setStats] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Fetch data van API
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/dashboard-stats')
+        const data = await response.json()
+        setStats(data)
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+
+    // Update elke 30 seconden
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return <div>Loading dashboard...</div>
+  }
+
+  return <DashboardLayout />
+}
+```
+
+## 🎯 Stap 6: Compleet Voorbeeld Dashboard
+
+```tsx
+// src/App.jsx
+import { StatsGrid } from "@/components/stats-card"
+import { TrendChart } from "@/components/charts/line-chart"
+import { CategoryChart } from "@/components/charts/bar-chart"
+
+function App() {
+  // Brevo/CRM data
+  const stats = [
+    { label: "Lead kwaliteit", value: "78%", delta: 2.5, footnote: "vs vorige week" },
+    { label: "Actieve leads", value: 127, delta: 8.1, footnote: "vs vorige week" },
+    { label: "Hot leads", value: 43, delta: 5.2, footnote: "vs vorige week" },
+    { label: "Actie nodig", value: 12, delta: -3.1, footnote: "vs gisteren", lowerIsBetter: true },
+  ]
+
+  const weeklyOutreach = [
+    { name: 'Ma', value: 42, replies: 6, hot: 2 },
+    { name: 'Di', value: 55, replies: 8, hot: 3 },
+    { name: 'Wo', value: 38, replies: 5, hot: 2 },
+    { name: 'Do', value: 61, replies: 10, hot: 4 },
+    { name: 'Vr', value: 47, replies: 7, hot: 3 },
+  ]
+
+  const leadSources = [
+    { name: 'Email', value: 45 },
+    { name: 'LinkedIn', value: 23 },
+    { name: 'Website', value: 18 },
+    { name: 'Referrals', value: 14 },
+  ]
+
+  return (
+    <div className="min-h-screen bg-neutral-50">
+      <div className="p-8 max-w-[1440px] mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="mt-2 text-sm text-neutral-600">
+              Real-time lead metrics en analytics
+            </p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <StatsGrid stats={stats} />
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TrendChart data={weeklyOutreach} title="Weekly Outreach" color="#3b82f6" />
+          <CategoryChart data={leadSources} title="Lead Sources" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default App
+```
+
+## 🔧 Stap 7: Custom Styling
+
+Efferd-style rounded cards:
+
+```css
+/* globals.css */
+.dashboard-card {
+  @apply rounded-[28px] border border-neutral-200 bg-white p-6 shadow-none;
+}
+
+.dashboard-card:hover {
+  @apply shadow-sm transition-shadow;
+}
+```
+
+Of inline:
+```tsx
+<Card className="rounded-[28px] border-neutral-200 bg-white p-6 shadow-none">
+```
+
+## 📊 Chart Types Overview
+
+| Chart Type | Use Case | Recharts Component |
+|-----------|----------|-------------------|
+| **Line** | Trends over tijd | `<LineChart>` |
+| **Bar** | Categorien vergelijken | `<BarChart>` |
+| **Area** | Cumulatieve data | `<AreaChart>` |
+| **Pie** | Percentages verdeling | `<PieChart>` |
+| **Scatter** | Correlaties | `<ScatterChart>` |
+
+## 🎨 Kleur Schemas
+
+```tsx
+const colors = {
+  primary: "#3b82f6",    // Blauw
+  success: "#10b981",    // Groen (positive delta)
+  danger: "#ef4444",     // Rood (negative delta)
+  warning: "#f59e0b",    // Oranje (hot leads)
+  neutral: "#6b7280",    // Grijs (neutral)
+}
+```
+
+## 🚀 Next Steps
+
+1. **Installeer Recharts**: `npm install recharts`
+2. **Kopieer components**: Delta, StatsCard, Charts
+3. **Voeg je data toe**: Brevo, CRM, of API
+4. **Customize styling**: Kleuren, fonts, spacing
+5. **Test responsiveness**: Mobile vs desktop layouts
+
+## 💡 Pro Tips
+
+- **Gebruik `tabular-nums`** voor betere nummer alignment
+- **Rounded corners**: `rounded-[28px]` voor premium look
+- **Delta colors**: Rood = slecht (meestal), Groen = goed
+- **LowerIsBetter**: Voor metrics zoals response time
+- **Grid layouts**: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`
+- **Chart heights**: 200-300px voor beste resultaten
+
+---
+
+**Nu je zelf premium dashboards kunt bouwen zoals Efferd! 🚀**
